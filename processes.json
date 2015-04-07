@@ -1,0 +1,14 @@
+{
+  "apps" : [{
+    "name"        : "app",
+    "script"      : "index",
+    "node_args"   : "--harmony",
+    "cron_restart"     : "* 1 * * *",
+    "watch"            : false,
+    "max_memory_restart" : "350M",
+    "env": {
+        "NODE_ENV": "development",
+        "PORT": "4010"
+    }
+  }]
+}
