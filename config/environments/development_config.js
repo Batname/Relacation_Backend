@@ -20,7 +20,7 @@ let environment = Object.create(appConfig, {
     }
   },
   app: {
-    port: appConfig.app.port || process.env.PORT
+    port: appConfig.default.port || process.env.PORT
   }
 });
 
