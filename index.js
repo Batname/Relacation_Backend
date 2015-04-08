@@ -34,9 +34,9 @@ app.init = co.wrap(function *index() {
   yield mongo.connect();
 
   /**
-   * mongoSeed start.
+   * mongoSeed start. Any time overwrite databace. 
    */
-  yield mongoSeed();
+  yield mongoSeed(true);
 
   // routers load
   

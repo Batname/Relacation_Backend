@@ -1,6 +1,6 @@
 {
   "verbose": true,
-  "ignore": ["*.test.js", "node_modules/*"],
+  "ignore": ["*.test.js", "node_modules/*", "*.xmind"],
   "execMap": {
     "pde": ""
   }
