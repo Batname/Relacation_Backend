@@ -16,7 +16,8 @@ let appConfig = {
     env: process.env.NODE_ENV,
     secret: process.env.SECRET || 'secret key',
     pass1: process.env.PASS || 'pass1',
-    pass2: process.env.PASS || 'pass2'
+    pass2: process.env.PASS || 'pass2',
+    cacheTime: 7 * 24 * 60 * 60 * 1000 /* default caching time (7 days) */
   }
 };
 
