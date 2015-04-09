@@ -10,14 +10,13 @@
      bcrypt = require('co-bcrypt'),
      _ = require("lodash");
 
-
 /**
  *  Import local files
  */
-
  let mongo = require('./../../config/database/mongo/mongo'),
      userHelper = require("./../helpers/user_helper"),
-     environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config");
+     environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     createJwtToken = require("./../../config/auth/create_jwt_token");
 
  let user = (function() {
 
@@ -60,32 +59,20 @@
           /**
            * Insert in DB
            */
-           let savedUser = yield mongo.users.insert(_.assign(requestUser, { 'pass': cryptPass, 'createdTime': createdTime, token: "" }));
-
+           let savedUser = yield mongo.users.insert(_.assign(requestUser, { 'pass': cryptPass, 'createdTime': createdTime}));
+           
           /**
            * Generate token
            */
-           let token = jwt.sign(savedUser, environment.default.secret, {expiresInMinutes: 90 * 24 * 60 /* 90 days */});
+           let token = createJwtToken(savedUser[0]);
 
-           /**
-            * Insert token
-            */
-           let insertToken = yield mongo.users.update(
-               {_id: savedUser[0]._id},
-               {$set: {token: token}}
-           );
-
-           /**
-            * Responce user
-            */
-           let responseUser =  yield mongo.users.findOne({_id: savedUser[0]._id});
           /**
            * Send responce
            */
            this.status = 201;
            this.body = {
             message: this.i18n.__('success_registration'),
-            responseUser: responseUser
+            payload: _.assign(savedUser[0], {token: token})
           }
         }
 
@@ -111,11 +98,13 @@
   }
 
   let _checkToken = function *() {
-     this.status = 201;
-     this.body = {
-      message: "check token success",
-      user: this.user
-    }
+    try {
+      this.status = 201;
+      this.body = {
+        message: "check token success"
+      }
+    }  
+    catch(e) {}
   }
 
   /**
@@ -128,5 +117,7 @@
 
 })();
 
-
+/**
+ * Export
+ */
 module.exports = user;

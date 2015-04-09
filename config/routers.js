@@ -14,7 +14,8 @@ let logger = require("koa-logger"),
 /**
  * Import local files
  */
-let environment = require("./environments/" + process.env.NODE_ENV + "_config");
+let environment = require("./environments/" + process.env.NODE_ENV + "_config"),
+    ensureAuthenticated = require("./auth/ensure_authenticated");
 
 /**
  * Import controllers
@@ -53,6 +54,8 @@ let rouretConfigs = {
     app.use(route.post("/user/signup", user.signup));
   },
   handlePrivateRouters: function (app) {
+
+    app.use(ensureAuthenticated());
     app.use(jwt({secret: environment.default.secret}));
     app.use(route.get("/token-check", user.checkToken));
   },
@@ -61,4 +64,7 @@ let rouretConfigs = {
   },
 };
 
+/**
+ * Export
+ */
 module.exports = rouretConfigs;

@@ -31,6 +31,18 @@ let mongoConfig = {
 };
 
 /**
+ * Client configs
+ */
+
+let client = {
+  client: {
+    "name": "React API v1",
+    "clientId": "react",
+    "clientSecret": "SomeRandomCharsAndNumbers"
+  }
+};
+
+/**
  * authConfig object, connect to app
  */
 let authConfig = {
@@ -79,4 +91,4 @@ let emailConfig = {
 /**
  * Export
  */
-module.exports = _.merge(appConfig, mongoConfig, authConfig, emailConfig);
+module.exports = _.merge(appConfig, mongoConfig, client, authConfig, emailConfig);
