@@ -23,8 +23,8 @@ let ObjectID = mongo.ObjectID,
 
 /**
  * Return Time
- * @param  {Number} h 
- * @return {String} 
+ * @param  {Number} h
+ * @return {String}
  */
 function getTime(h) {
   return new Date(new Date(now).setHours(now.getHours() + h));
@@ -56,7 +56,6 @@ function *seed(overwrite) {
 
     /**
      * Create salt and hash varables
-     * @type {[type]}
      */
     let salt = yield bcrypt.genSalt(10);
     /**

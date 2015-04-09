@@ -3,62 +3,76 @@
 /**
  * require libraries
  */
-let http = require("http"),
-    koa = require("koa"),
-    socket = require("socket.io"),
-    co = require("co");
+ let http = require("http"),
+ koa = require("koa"),
+ socket = require("socket.io"),
+ co = require("co");
 
 /**
  * require local files
  */
 
-let environment = require("./config/environments/" + process.env.NODE_ENV + "_config"),
-    mongo = require('./config/database/mongo/mongo'),
-    mongoSeed = require('./config/database/mongo/mongo-seed');
+ let environment = require("./config/environments/" + process.env.NODE_ENV + "_config"),
+ mongo = require('./config/database/mongo/mongo'),
+ mongoSeed = require('./config/database/mongo/mongo-seed'),
+ routers = require("./config/routers");
 
 /**
  * Varables
  */
-let app = koa(),
-    server,
-    io;
+ let app = koa(),
+ server,
+ io;
 
 /**
  * Initialisation function
  */
-app.init = co.wrap(function *index() {
-  
+ app.init = co.wrap(function *index() {
+
   /**
    * db connect
    */
-  yield mongo.connect();
+   yield mongo.connect();
 
   /**
-   * mongoSeed start. Any time overwrite databace. 
+   * mongoSeed start. Any time overwrite databace.
    */
-  yield mongoSeed(true);
+   yield mongoSeed(true);
 
-  // routers load
-  
+  /**
+   * routers configs
+   */
+   routers.handleConfigs(app);
+
+   /**
+    * connect public routers
+    */
+   routers.handlePublicRouters(app);
+
+   /**
+    * connect public routers
+    */
+   routers.handlePrivateRouters(app);
+
   /**
    * get server varable.
    */
-  server = http.Server(app.callback());
+   server = http.Server(app.callback());
 
   /**
    * get socket varable.
    */
-  io = socket(server);
+   io = socket(server);
 
   /**
    * start server.
    */
-  server.listen(process.env.PORT);
+   server.listen(process.env.PORT);
 
   /**
    * Server logging
    */
-  if(environment.log) {
+   if(environment.log) {
     environment.log.getInfoMessage('Server listening on port ' + environment.app.port);
   }
 
@@ -67,9 +81,9 @@ app.init = co.wrap(function *index() {
 /**
  * Inplement index function
  */
-if(!module.parent) {
+ if(!module.parent) {
   app.init().catch(function (err) {
     console.error(err.stack);
     process.exit(1);
   });
-}    
+}
