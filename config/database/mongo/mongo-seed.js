@@ -79,6 +79,15 @@ function *seed(overwrite) {
     ];
 
     /**
+     * client object
+     */
+    
+     let client = {
+         name: environment.client.name, 
+         clientId: environment.client.clientId, 
+         clientSecret: environment.client.clientSecret 
+     };
+    /**
      * posts object
      */
     let posts = [
@@ -140,6 +149,7 @@ function *seed(overwrite) {
 
     yield mongo.counters.insert({_id: 'userId', seq: users.length});
     yield mongo.users.insert(users);
+    yield mongo.clients.insert(client);
     yield mongo.posts.insert(posts);
     yield mongo.messages.insert(messages);
     yield mongo.feedbacks.insert(feedbacks);
