@@ -15,7 +15,9 @@ let logger = require("koa-logger"),
  * Import local files
  */
 let environment = require("./environments/" + process.env.NODE_ENV + "_config"),
-    ensureAuthenticated = require("./auth/ensure_authenticated");
+    ensureAuthenticated = require("./auth/ensure_authenticated"),
+    handlePropagationErrors = require("./../app/helpers/propagation_errors_handling"),
+    handle404Errors = require("./../app/helpers/404_errors_handling");
 
 /**
  * Import controllers
@@ -29,6 +31,9 @@ let rouretConfigs = {
   handleConfigs: function (app) {
     app.use(logger());
 
+    /**
+     * Using cors middleware
+     */
     app.use(cors({
       maxAge: environment.default.cacheTime / 1000,
       credentials: true,
@@ -36,8 +41,14 @@ let rouretConfigs = {
       headers: 'Origin, X-Requested-With, Content-Type, Accept, Authorization'
     }));
 
+    /**
+     * Using localization
+     */
     locale(app);
 
+    /**
+     * Using i18n
+     */
     app.use(i18n(app, {
      directory: './config/locales',
      locales: ['en-UA', 'ru-UA'],
@@ -51,13 +62,30 @@ let rouretConfigs = {
     /**
      * User routers
      */
-    app.use(route.post("/user/signup", user.signup));
+    app.use(route.post("/api/v1/user/signup", user.signup));
+    app.use(route.post("/api/v1/user/signin", user.signin));
+
+
+    /**
+     * Error handle
+     */
+    app.use(handlePropagationErrors());
+    app.use(handle404Errors());
   },
   handlePrivateRouters: function (app) {
 
+    /**
+     * JWT check and error handle
+     */
     app.use(ensureAuthenticated());
     app.use(jwt({secret: environment.default.secret}));
-    app.use(route.get("/token-check", user.checkToken));
+
+    /**
+     * User private routers
+     */
+    app.use(route.put("/api/v1/user/update/:userId", user.update));
+    app.use(route.del("/api/v1/user/delete/:userId", user.delete));
+
   },
   handleErrorRouters: function (app) {
 
