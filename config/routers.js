@@ -71,6 +71,12 @@ let rouretConfigs = {
      */
     app.use(route.get("/api/v1/password/forgot", password.getForgot));
     app.use(route.post("/api/v1/password/forgot", password.postForgot));
+    /**
+     * Reset password
+     */
+    app.use(route.get("/api/v1/password/forgot/reset/:temporaryPass", password.getReset));
+    app.use(route.post("/api/v1/password/forgot/reset/:temporaryPass", password.postReset));
+
 
     /**
      * Error handle

@@ -81,10 +81,10 @@ let authConfig = {
 
 let emailConfig = {
   email_transport: {
+    email: "info@ng-dev.me",
     accessKeyId: "",
     secretAccessKey: "",
-    rateLimit: 1,
-    email: ""
+    rateLimit: 1
   }
 }
 
