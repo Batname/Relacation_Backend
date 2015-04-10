@@ -181,6 +181,7 @@ function *seed(overwrite) {
     yield mongo.posts_ua.insert(posts_ua);
     yield mongo.messages.insert(messages);
     yield mongo.feedbacks.insert(feedbacks);
+
   }
 }
 
