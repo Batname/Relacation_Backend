@@ -63,15 +63,15 @@ function *seed(overwrite) {
      */
     let users = [
       {
-        _id: 1,
-        email: 'dubinin@koan.herokuapp.com',
+        _id: new ObjectID("5527a81b9f8ab90e5fc1513a"),
+        email: 'dadubinin@gmail.com',
         pass: yield bcrypt.hash(environment.default.pass1, salt),
         name: 'Morgan the Almighty',
         picture: ""
       },
       {
         _id: 2,
-        email: 'chuck@koan.herokuapp.com',
+        email: 'dadubinin1@gmail.com',
         pass: yield bcrypt.hash(environment.default.pass2, salt),
         name: 'Chuck Norris',
         picture: ""
@@ -81,20 +81,47 @@ function *seed(overwrite) {
     /**
      * client object
      */
-    
+
      let client = {
-         name: environment.client.name, 
-         clientId: environment.client.clientId, 
-         clientSecret: environment.client.clientSecret 
+         name: environment.client.name,
+         clientId: environment.client.clientId,
+         clientSecret: environment.client.clientSecret
      };
     /**
-     * posts object
+     * posts_en object
      */
-    let posts = [
+    let posts_en = [
       {
         _id: new ObjectID(),
         from: {_id: 1, name: 'Morgan the Almighty', picture: '/api/users/1/picture'},
         message: 'Hi there! This is a sample post demonstrating a KOAN app. KOAN is a simple boilerplate for building full-stack JavaScript Web applications using Koa, AngularJS, and Node.js. It utilizes WebSockets to provide real-time communication between servers and clients. MongoDB is used for data persistence and Passport.js for social logins. There are also numerous Grunt tasks pre-bundled and configured to facilitate development and testing. You can open this site in multiple browser tabs and post something to see how real-time communication works. You can also browse the project’s GitHub page to start building KOAN apps yourself.',
+        createdTime: getTime(-97),
+        updatedTime: getTime(-24),
+        comments: [
+          {
+            _id: new ObjectID(),
+            from: {_id: 2, name: 'Chuck Norris', picture: '/api/users/2/picture'},
+            createdTime: getTime(-26),
+            message: 'Also remember that, if you can read this, you are within range of Chuck!'
+          },
+          {
+            _id: new ObjectID(),
+            from: {_id: 1, name: 'Morgan the Almighty', picture: '/api/users/1/picture'},
+            createdTime: getTime(-24),
+            message: 'Ow yeah!'
+          }
+        ]
+      }
+    ];
+
+    /**
+     * posts_ua object
+     */
+    let posts_ua = [
+      {
+        _id: new ObjectID(),
+        from: {_id: 1, name: 'Morgan the Almighty', picture: '/api/users/1/picture'},
+        message: 'Ua there! This is a sample post demonstrating a KOAN app. KOAN is a simple boilerplate for building full-stack JavaScript Web applications using Koa, AngularJS, and Node.js. It utilizes WebSockets to provide real-time communication between servers and clients. MongoDB is used for data persistence and Passport.js for social logins. There are also numerous Grunt tasks pre-bundled and configured to facilitate development and testing. You can open this site in multiple browser tabs and post something to see how real-time communication works. You can also browse the project’s GitHub page to start building KOAN apps yourself.',
         createdTime: getTime(-97),
         updatedTime: getTime(-24),
         comments: [
@@ -150,7 +177,8 @@ function *seed(overwrite) {
     yield mongo.counters.insert({_id: 'userId', seq: users.length});
     yield mongo.users.insert(users);
     yield mongo.clients.insert(client);
-    yield mongo.posts.insert(posts);
+    yield mongo.posts_en.insert(posts_en);
+    yield mongo.posts_ua.insert(posts_ua);
     yield mongo.messages.insert(messages);
     yield mongo.feedbacks.insert(feedbacks);
   }
