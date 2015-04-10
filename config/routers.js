@@ -22,7 +22,8 @@ let environment = require("./environments/" + process.env.NODE_ENV + "_config"),
 /**
  * Import controllers
  */
-let user = require("./../app/controllers/user_controller")
+let user = require("./../app/controllers/user_controller"),
+    password = require("./../app/controllers/password_controller");
 
 /**
  * Router config, necessary for export in main file.
@@ -64,6 +65,17 @@ let rouretConfigs = {
      */
     app.use(route.post("/api/v1/user/signup", user.signup));
     app.use(route.post("/api/v1/user/signin", user.signin));
+
+    /**
+     * Forgot password
+     */
+    app.use(route.get("/api/v1/password/forgot", password.getForgot));
+    app.use(route.post("/api/v1/password/forgot", password.postForgot));
+    /**
+     * Reset password
+     */
+    app.use(route.get("/api/v1/password/forgot/reset/:temporaryPass", password.getReset));
+    app.use(route.post("/api/v1/password/forgot/reset/:temporaryPass", password.postReset));
 
 
     /**

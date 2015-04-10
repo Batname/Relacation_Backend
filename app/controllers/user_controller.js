@@ -255,7 +255,7 @@ let user = (function() {
        * Update and save token
        */
       yield mongo.users.update(
-          {_id: updatedUser},
+          {_id: new ObjectID(updatedUser._id)},
           {$set: {
             token: newToken
           }}
