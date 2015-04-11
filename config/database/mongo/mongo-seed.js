@@ -67,6 +67,7 @@ function *seed(overwrite) {
         email: 'dadubinin@gmail.com',
         pass: yield bcrypt.hash(environment.default.pass1, salt),
         name: 'Morgan the Almighty',
+        admin: true,
         picture: ""
       },
       {

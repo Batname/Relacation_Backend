@@ -23,7 +23,10 @@ let environment = require("./environments/" + process.env.NODE_ENV + "_config"),
  * Import controllers
  */
 let user = require("./../app/controllers/user_controller"),
-    password = require("./../app/controllers/password_controller");
+    password = require("./../app/controllers/password_controller"),
+    feedback = require("./../app/controllers/feedback_controller"),
+    post = require("./../app/controllers/post_controller"),
+    message = require("./../app/controllers/message_controller");
 
 /**
  * Router config, necessary for export in main file.
@@ -57,6 +60,8 @@ let rouretConfigs = {
        'query'               //  optional detect querystring - `/?locale=en-UA`
      ]
     }));
+
+    require('koa-qs')(app, 'extended');
   },
 
   handlePublicRouters: function (app) {
@@ -65,18 +70,31 @@ let rouretConfigs = {
      */
     app.use(route.post("/api/v1/user/signup", user.signup));
     app.use(route.post("/api/v1/user/signin", user.signin));
+    app.use(route.get("/api/v1/user/:userId", user.get));
+
+    /**
+     * Post routers
+     */
+    app.use(route.get("/api/v1/posts", post.list));
+    app.use(route.get("/api/v1/post/:postId", post.get));
+    
 
     /**
      * Forgot password
      */
     app.use(route.get("/api/v1/password/forgot", password.getForgot));
     app.use(route.post("/api/v1/password/forgot", password.postForgot));
+
     /**
      * Reset password
      */
     app.use(route.get("/api/v1/password/forgot/reset/:temporaryPass", password.getReset));
     app.use(route.post("/api/v1/password/forgot/reset/:temporaryPass", password.postReset));
 
+    /**
+     * Feedback 
+     */
+    app.use(route.post("/api/v1/feedback", feedback.send));
 
     /**
      * Error handle
@@ -97,6 +115,21 @@ let rouretConfigs = {
      */
     app.use(route.put("/api/v1/user/update/:userId", user.update));
     app.use(route.del("/api/v1/user/delete/:userId", user.delete));
+    app.use(route.put("/api/v1/user/logout/:userId", user.logout));
+
+    /**
+     * Post private routers
+     */
+    app.use(route.post("/api/v1/post", post.create));
+    app.use(route.put("/api/v1/post/:postId", post.update));
+    app.use(route.del("/api/v1/post/:postId", post.delete));
+    app.use(route.post("/api/v1/post/:postId/comment", post.createComment));
+
+    /**
+     * Message private routers
+     */
+    
+    app.use(route.post("/api/v1/message", message.create));
 
   },
   handleErrorRouters: function (app) {

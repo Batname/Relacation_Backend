@@ -16,6 +16,7 @@
  let mongo = require('./../../config/database/mongo/mongo'),
      userHelper = require("./../helpers/user_helper"),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     validateEmail = require("./../helpers/email_validation"),
      createJwtToken = require("./../../config/auth/create_jwt_token");
 /**
  * Global varables
@@ -51,6 +52,13 @@ let user = (function() {
          if(userHelper.checkFieldsPresence([requestUser])) {
 
           /**
+           * Check email validity
+           */
+          if(!validateEmail(requestUser.email)) {
+            this.throw(401, 'Email not valid');
+          }
+
+          /**
            * Create additional user object parametrs
            */
            let cryptPass = yield bcrypt.hash(requestUser.pass, salt);
@@ -60,21 +68,19 @@ let user = (function() {
            * Insert in DB
            */
            let savedUser = yield mongo.users.insert(_.assign(requestUser, { 'pass': cryptPass, 'createdTime': createdTime}));
-
-          /**
-           * Generate token
-           */
-           let token = createJwtToken(savedUser[0]);
+           let user = savedUser[0];
 
            /**
-            * Update and save token
+            * Dekete user for token
             */
-           yield mongo.users.update(
-               {_id: savedUser[0]._id},
-               {$set: {
-                 token: token
-               }}
-           );
+           user.id = user._id;
+           delete user._id;
+           delete user.password;
+
+           /**
+            * Generate token
+            */
+           let token = createJwtToken(user);
 
           /**
            * Send responce
@@ -82,8 +88,8 @@ let user = (function() {
            this.status = 201;
            this.body = {
             message: this.i18n.__('success_registration'),
-            payload: savedUser[0],
-            token: token
+            token: token,
+            userId: user.id
           }
         }
 
@@ -135,19 +141,16 @@ let user = (function() {
       }
 
       /**
+       * Dekete user for token
+       */
+      user.id = user._id;
+      delete user._id;
+      delete user.password;
+
+      /**
        * Generate token
        */
       let token = createJwtToken(user);
-
-      /**
-       * Update and save token
-       */
-      yield mongo.users.update(
-          {_id: user._id},
-          {$set: {
-            token: token
-          }}
-      );
 
       /**
        * Send success responce
@@ -155,7 +158,8 @@ let user = (function() {
       this.status = 201;
       this.body = {
         message: "signin success",
-        token: token
+        token: token,
+        userId: user.id
       }
     }
     /**
@@ -187,6 +191,13 @@ let user = (function() {
       let userObjectID  = new ObjectID(userId);
 
       /**
+       * Password miss
+       */
+      if(!credentials.pass){
+        this.throw(401, 'Password does not exists');
+      };
+
+      /**
        * Check exists user
        * @type {ObjectID}
        */
@@ -194,13 +205,27 @@ let user = (function() {
       if(!existingUser) {
         this.throw(401, 'User do not exist');
       }
+
       /**
        * Check rules
        */
       let startedToken = this.request.headers.authorization.split(' ')[1];
       let decoded = jwt.decode(startedToken, environment.default.secret);
-      if (decoded.user._id != userId) {
+      if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
+      }
+      
+      /**
+       * Create compare Pass varable
+       * @type {Boolean}
+       */
+      let comparePass = yield bcrypt.compare(credentials.pass, decoded.user.pass);
+
+      /**
+       * Check pass
+       */
+      if (!comparePass) {
+        this.throw(401, 'Incorrect password.')
       }
 
       /**
@@ -212,22 +237,16 @@ let user = (function() {
       };
 
       /**
-       * Password miss
+       * Check email validity
        */
-      if(!credentials.pass){
-        this.throw(401, 'Password does not exists');
-      };
-
-      /**
-       * Create new password
-       */
-      let salt = yield bcrypt.genSalt(10);
-      let cryptPass = yield bcrypt.hash(credentials.pass, salt);
+      if(!validateEmail(credentials.email)) {
+        this.throw(401, 'Email not valid');
+      }
 
       /**
        * Update operation
        */
-      let userForUpdate = _.assign(credentials, { pass: cryptPass });
+      let userForUpdate = _.assign(credentials, { pass: decoded.user.pass });
       yield mongo.users.update(
           {_id: userObjectID},
           {$set: userForUpdate}
@@ -247,27 +266,12 @@ let user = (function() {
       };
 
       /**
-       * New token
-       */
-      let newToken = createJwtToken(updatedUser);
-
-      /**
-       * Update and save token
-       */
-      yield mongo.users.update(
-          {_id: new ObjectID(updatedUser._id)},
-          {$set: {
-            token: newToken
-          }}
-      );
-
-      /**
        * Response action
        */
       this.status = 201;
       this.body = {
         message: "update success",
-        token: newToken
+        userId: updatedUser._id
       }
     }
     /**
@@ -285,6 +289,10 @@ let user = (function() {
     }
   };
 
+  /**
+   * DELETE /api/v1/user/delete/:userId
+   * Delete user info - public
+   */
   let _delete = function *(userId) {
     try {
 
@@ -313,7 +321,7 @@ let user = (function() {
        */
       let startedToken = this.request.headers.authorization.split(' ')[1];
       let decoded = jwt.decode(startedToken, environment.default.secret);
-      if (decoded.user._id != userId) {
+      if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
       };
 
@@ -347,7 +355,8 @@ let user = (function() {
        */
       this.status = 201;
       this.body = {
-        message: "delete success"
+        message: "delete success",
+        userId: existingUser._id
       }
     }
     catch(err) {
@@ -362,13 +371,115 @@ let user = (function() {
   };
 
   /**
+   * GET /api/v1/user/:userId
+   * Get user info - public
+   */
+  let _get = function *(userId) {
+    try{
+
+      /**
+       * Specific mongo id Format
+       * @type {ObjectID}
+       */
+      let userObjectID  = new ObjectID(userId);
+
+      /**
+       * Check exists user
+       * @type {ObjectID}
+       */
+      let user = yield mongo.users.findOne({_id: userObjectID});
+
+      if(!user){
+        this.throw(401, 'User do not exist');
+      };
+
+      /**
+       * Response action
+       */
+      this.status = 201;
+      this.body = {
+        message: "get user success",
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture
+      }
+
+    }
+    catch(err){
+      this.status = err.status || 500;
+      this.body = {
+        message: "get user error",
+        status: this.status,
+        title: err.message
+      };
+    }
+
+  };
+
+  /**
+   * PUT /api/v1/user/logout/:userId
+   * Lodout user, delete token
+   */
+  let _logout = function *(userId) {
+    try{
+
+      /**
+       * Specific mongo id Format
+       * @type {ObjectID}
+       */
+      let userObjectID  = new ObjectID(userId);
+
+      /**
+       * Check exists user
+       * @type {ObjectID}
+       */
+      let user = yield mongo.users.findOne({_id: userObjectID});
+
+      if(!user){
+        this.throw(401, 'User do not exist');
+      };
+
+      /**
+       * Check rules
+       */
+      let token = this.request.headers.authorization.split(' ')[1];
+      let decoded = jwt.decode(token, environment.default.secret);
+      if (decoded.user.id != userId) {
+        this.throw(401, 'You dont have permssions');
+      };
+
+      /**
+       * Response action
+       */
+      this.status = 201;
+      this.body = {
+        userId: user._id,
+        message: "logout user success"
+      }
+
+    }
+    catch(err){
+      this.status = err.status || 500;
+      this.body = {
+        message: "logout user error",
+        status: this.status,
+        title: err.message
+      };
+    }
+
+  }
+
+  /**
    * Return public methods
    */
    return {
     signup: _signup,
     signin: _signin,
     update: _update,
-    delete: _delete
+    delete: _delete,
+    get: _get,
+    logout: _logout
   }
 
 })();
