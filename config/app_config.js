@@ -82,8 +82,8 @@ let authConfig = {
 let emailConfig = {
   email_transport: {
     email: "info@ng-dev.me",
-    accessKeyId: "AKIAIN47HLOP77CNCDNQ",
-    secretAccessKey: "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",
+    accessKeyId: "",
+    secretAccessKey: "",
     rateLimit: 1
   }
 }
