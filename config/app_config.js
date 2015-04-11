@@ -88,7 +88,15 @@ let emailConfig = {
   }
 }
 
+let sockets = {
+  sockets: {
+    port: {
+      message: 4020
+    } 
+  }
+}
+
 /**
  * Export
  */
-module.exports = _.merge(appConfig, mongoConfig, client, authConfig, emailConfig);
+module.exports = _.merge(appConfig, mongoConfig, client, authConfig, emailConfig, sockets);

@@ -12,10 +12,12 @@
  *  Import local files
  */
  let mongo = require('./../../config/database/mongo/mongo'),
-     environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config");
+     environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     io = require("./../sockets/message_socket");
 /**
  * Global varables
  */
+
 let ObjectID = mongo.ObjectID;
 
 let message = (function() {
@@ -76,7 +78,11 @@ let message = (function() {
        */
       message.id = message._id;
       delete message._id;
-      //ws.notify('message.created', message);
+
+      /**
+       * Notify all throw web message socket
+       */
+      io.notify('message.created', message);
     }
     /**
      * Error Handelind

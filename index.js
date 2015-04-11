@@ -4,18 +4,17 @@
  * require libraries
  */
  let http = require("http"),
- koa = require("koa"),
- socket = require("socket.io"),
- co = require("co");
+     koa = require("koa"),
+     co = require("co");
 
 /**
  * require local files
  */
 
  let environment = require("./config/environments/" + process.env.NODE_ENV + "_config"),
- mongo = require('./config/database/mongo/mongo'),
- mongoSeed = require('./config/database/mongo/mongo-seed'),
- routers = require("./config/routers");
+     mongo = require('./config/database/mongo/mongo'),
+     mongoSeed = require('./config/database/mongo/mongo-seed'),
+     routers = require("./config/routers");
 
 /**
  * Varables
@@ -60,14 +59,15 @@
    server = http.Server(app.callback());
 
   /**
-   * get socket varable.
+   * default socket server.
    */
-   io = socket(server);
+   require("./app/sockets/index_socket")(server);
 
   /**
    * start server.
    */
    server.listen(process.env.PORT);
+
 
   /**
    * Server logging
