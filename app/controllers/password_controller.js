@@ -101,6 +101,10 @@ let password = (function() {
        */
       let user = yield mongo.users.findOne({email: credentials.email});
 
+      if(!user){
+        this.throw(401, 'User do not exist');
+      };
+
       /**
        * Set pass in DB
        */
@@ -249,19 +253,17 @@ let password = (function() {
        );
 
        /**
-        * New token
+        * Find updated user in db
         */
-       let newToken = createJwtToken(user);
+       let savedUser = yield mongo.users.findOne({_id: user._id});
 
        /**
-        * Update and save token
+        * New token and delete old
         */
-       yield mongo.users.update(
-           {_id: user._id},
-           {$set: {
-             token: newToken
-           }}
-       );
+       savedUser.id = savedUser._id;
+       delete savedUser._id;
+       delete savedUser.password;
+       let newToken = createJwtToken(savedUser);
 
        /**
         * Send Message
@@ -275,7 +277,8 @@ let password = (function() {
        this.status = 201;
        this.body = {
          message: "post reset pass success",
-         token: newToken
+         token: newToken,
+         userId: savedUser.id 
        }
 
 

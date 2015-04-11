@@ -65,6 +65,7 @@ let rouretConfigs = {
      */
     app.use(route.post("/api/v1/user/signup", user.signup));
     app.use(route.post("/api/v1/user/signin", user.signin));
+    app.use(route.get("/api/v1/user/:userId", user.get));
 
     /**
      * Forgot password
@@ -97,6 +98,7 @@ let rouretConfigs = {
      */
     app.use(route.put("/api/v1/user/update/:userId", user.update));
     app.use(route.del("/api/v1/user/delete/:userId", user.delete));
+    app.use(route.put("/api/v1/user/logout/:userId", user.logout));
 
   },
   handleErrorRouters: function (app) {
