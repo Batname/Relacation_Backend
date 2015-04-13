@@ -3,7 +3,6 @@
 /**
  * Import librares
  */
-
 let logger = require("koa-logger"),
     jwt = require("koa-jwt"),
     cors = require("koa-cors"),
@@ -33,11 +32,8 @@ let user = require("./../app/controllers/user_controller"),
  */
 let rouretConfigs = {
   handleConfigs: function (app) {
-    app.use(logger());
 
-    /**
-     * Using cors middleware
-     */
+    app.use(logger());
     app.use(cors({
       maxAge: environment.default.cacheTime / 1000,
       credentials: true,
@@ -46,25 +42,25 @@ let rouretConfigs = {
     }));
 
     /**
-     * Using localization
+     * Using localization and i18n
      */
     locale(app);
-
-    /**
-     * Using i18n
-     */
     app.use(i18n(app, {
      directory: './config/locales',
      locales: ['en-UA', 'ru-UA'],
      modes: [
-       'query'               //  optional detect querystring - `/?locale=en-UA`
+       'query'
      ]
     }));
 
+    /**
+     * handle queries from requests
+     */
     require('koa-qs')(app, 'extended');
   },
 
   handlePublicRouters: function (app) {
+
     /**
      * User routers
      */
@@ -78,7 +74,6 @@ let rouretConfigs = {
     app.use(route.get("/api/v1/posts", post.list));
     app.use(route.get("/api/v1/post/:postId", post.get));
     
-
     /**
      * Forgot password
      */
@@ -128,7 +123,6 @@ let rouretConfigs = {
     /**
      * Message private routers
      */
-    
     app.use(route.post("/api/v1/message", message.create));
 
   },
@@ -137,7 +131,4 @@ let rouretConfigs = {
   },
 };
 
-/**
- * Export
- */
 module.exports = rouretConfigs;

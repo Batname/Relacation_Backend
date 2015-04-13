@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "DEBUG=socket.io* PORT=4010 NODE_ENV=development nodemon --harmony index"
+    "start": "DEBUG=* PORT=4010 NODE_ENV=development nodemon --harmony index"
   },
   "author": "",
   "license": "ISC",

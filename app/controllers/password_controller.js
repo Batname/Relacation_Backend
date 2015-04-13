@@ -20,9 +20,7 @@
 /**
  * Global varables
  */
-
 let ObjectID = mongo.ObjectID;
-
 let password = (function() {
 
   /**
@@ -31,28 +29,24 @@ let password = (function() {
    */
   let _getForgot = function *(){
     try{
+
+      /**
+       * Create varables
+       */
       let token = this.request.header.authorization;
 
       /**
-       * Check auth
+       * Verification
        */
       if(token){
         this.throw(401, 'You authorization now');
       };
 
-       /**
-        * Send responce
-        */
        this.status = 201;
        this.body = {
         message: "success get forgot"
       };
-    }
-    /**
-     * Error Handelind
-     * @param  {Object} err 
-     */
-    catch (err) {
+    } catch (err) {
       this.status = err.status || 500;
       this.body = {
         message: "get forgot pass error",
@@ -67,49 +61,37 @@ let password = (function() {
    * Forgot Password page
    */
   let _postForgot = function *(){
+
     try{
-      /**
-       * Get request
-       * @type {Object}
-       */
-      let credentials = yield parse(this);
 
       /**
-       * Check email validation and availability
+       * Create varables
        */
-      if(!credentials.email) {
+      let requestObject = yield parse(this),
+          salt = yield bcrypt.genSalt(10),
+          hash = yield bcrypt.hash('restpass', salt),
+          temporaryPass = hash.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, ''),
+          user = yield mongo.users.findOne({email: requestObject.email}),
+          forgotPassSend = forgotPassMailer.forgot();
+
+      /**
+       * Verification
+       */
+      if(!user){
+        this.throw(401, 'User do not exist');
+      }
+      if(!requestObject.email) {
         this.throw(401, 'Email does not exists');
       }
-
-      /**
-       * Check email validity
-       */
-      if(!validateEmail(credentials.email)) {
+      if(!validateEmail(requestObject.email)) {
         this.throw(401, 'Email not valid');
       }
 
       /**
-       * Generate reset password
-       */
-      let salt = yield bcrypt.genSalt(10);
-      let hash = yield bcrypt.hash('restpass', salt);
-      let temporaryPass = hash.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
-
-      /**
-       * Find user in DB
-       * @type {Object}
-       */
-      let user = yield mongo.users.findOne({email: credentials.email});
-
-      if(!user){
-        this.throw(401, 'User do not exist');
-      };
-
-      /**
-       * Set pass in DB
+       * Update user in DB
        */
       yield mongo.users.update(
-          {email: credentials.email},
+          {email: requestObject.email},
           {$set: {
             resetPassword: temporaryPass,
             resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
@@ -119,23 +101,14 @@ let password = (function() {
       /**
        * Send Message
        */
-      let forgotPass = forgotPassMailer.forgot();
-      yield forgotPass(credentials, this, temporaryPass);
+      yield forgotPassSend(requestObject, this, temporaryPass);
 
-       /**
-        * Send Responce
-        */
-       this.status = 201;
-       this.body = {
+      this.status = 201;
+      this.body = {
         message: "success send reset password",
         temporary_pass: temporaryPass
       };
-    }
-    /**
-     * Error Handelind
-     * @param  {Object} err 
-     */
-    catch (err) {
+    } catch (err) {
       this.status = err.status || 500;
       this.body = {
         message: "post forgot pass error",
@@ -150,41 +123,30 @@ let password = (function() {
    * Reset Password
    */
   let _getReset = function *(temporaryPass){
+
     try{
 
-       /**
-        * Search user in db
-        */
+      /**
+       * Create varables
+       */
        let user = yield mongo.users.findOne({resetPassword: temporaryPass});
 
-       /**
-        * Check user 
-        */
-       if(!user) {
-         this.throw(401, 'User does not exists');
-       };
-
-       /**
-        * Check time 
-        */
-       if (user.resetPasswordExpires <= (Date.now() / 1000 | 0)) {
+      /**
+       * Verification
+       */
+      if(!user) {
+        this.throw(401, 'User with resetPassword does not exists');
+      }
+      if (user.resetPasswordExpires <= (Date.now() / 1000 | 0)) {
         this.throw(401, 'resetPassword has expired');
-       };
+      }
 
-       /**
-        * Send response to user
-        */
-       this.status = 201;
-       this.body = {
+      this.status = 201;
+      this.body = {
         status: this.status,
         message: "success get reset",
       };
-    }
-    /**
-     * Error Handelind
-     * @param  {Object} err 
-     */
-    catch (err) {
+    } catch (err) {
       this.status = err.status || 500;
       this.body = {
         message: "get reset pass error",
@@ -200,94 +162,64 @@ let password = (function() {
    */
   let _postReset = function *(temporaryPass){
     try{
+
       /**
-       * Get request
-       * @type {Object}
+       * Create varables
        */
-       let credentials = yield parse(this);
+      let requestObject = yield parse(this),
+          user = yield mongo.users.findOne({resetPassword: temporaryPass}),
+          salt = yield bcrypt.genSalt(10),
+          cryptPass = yield bcrypt.hash(requestObject.pass, salt),
+          updatedUser, token,
+          resetPassSend = forgotPassMailer.reset();
 
-       /**
-        * Search user in db
-        */
-       let user = yield mongo.users.findOne({resetPassword: temporaryPass});
-
-       /**
-        * Check user 
-        */
-       if(!user) {
-         this.throw(401, 'User does not exists');
-       };
-
-       /**
-        * Check time 
-        */
-       if (user.resetPasswordExpires <= (Date.now() / 1000 | 0)) {
+      /**
+       * Verification
+       */
+      if(!user) {
+        this.throw(401, 'User does not exists');
+      };
+      if (user.resetPasswordExpires <= (Date.now() / 1000 | 0)) {
         this.throw(401, 'resetPassword has expired');
-       };
+      };
+      if(!requestObject.pass){
+        this.throw(401, 'Password does not exists');
+      };
 
-       /**
-        * Password miss
-        */
-       if(!credentials.pass){
-         this.throw(401, 'Password does not exists');
-       };
-
-       /**
-        * Create new password
-        */
-       let salt = yield bcrypt.genSalt(10);
-       let cryptPass = yield bcrypt.hash(credentials.pass, salt);
-
-
-       /**
-        * Update operation
-        */
-       yield mongo.users.update(
-           {_id: user._id},
-           {$set: { 
-            pass: cryptPass,
-            resetPassword : undefined,
-            resetPasswordExpires : undefined 
-             }
+      /**
+       * Update user in DB
+       */
+      yield mongo.users.update(
+         {_id: user._id},
+         {$set: { 
+          pass: cryptPass,
+          resetPassword : undefined,
+          resetPasswordExpires : undefined 
            }
-       );
+         }
+      );
 
-       /**
-        * Find updated user in db
-        */
-       let savedUser = yield mongo.users.findOne({_id: user._id});
+      /**
+       * Created token operations
+       */
+      updatedUser = yield mongo.users.findOne({_id: user._id});
+      updatedUser.id = updatedUser._id;
+      delete updatedUser._id;
+      delete updatedUser.password;
+      token = createJwtToken(updatedUser);
 
-       /**
-        * New token and delete old
-        */
-       savedUser.id = savedUser._id;
-       delete savedUser._id;
-       delete savedUser.password;
-       let newToken = createJwtToken(savedUser);
+      /**
+       * Send Message
+       */
+      yield resetPassSend(user, this);
 
-       /**
-        * Send Message
-        */
-       let resetPass = forgotPassMailer.reset();
-       yield resetPass(user, this);
-
-       /**
-        * Response action
-        */
        this.status = 201;
        this.body = {
          message: "post reset pass success",
-         token: newToken,
-         userId: savedUser.id 
+         token: token,
+         userId: updatedUser.id
        }
-
-
-   }
-   /**
-    * Error Handelind
-    * @param  {Object} err 
-    */
-   catch (err) {
+   } catch (err) {
      this.status = err.status || 500;
      this.body = {
        message: "post reset pass error",
@@ -295,23 +227,18 @@ let password = (function() {
        title: err.message
      };
    }
-
   };
 
+  /**
+   * Return public methods
+   */
+  return {
+    getForgot: _getForgot,
+    postForgot: _postForgot,
+    getReset: _getReset,
+    postReset: _postReset
+  }
 
-   /**
-    * Return public methods
-    */
-    return {
-     getForgot: _getForgot,
-     postForgot: _postForgot,
-     getReset: _getReset,
-     postReset: _postReset
-   }
+})();
 
- })();
-
- /**
-  * Export
-  */
- module.exports = password;
+module.exports = password;

@@ -13,13 +13,12 @@
  */
  let mongo = require('./../../config/database/mongo/mongo'),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
-     io = require("./../sockets/message_socket");
+     notificationIO = require("./../sockets/notification_socket");
+
 /**
  * Global varables
  */
-
 let ObjectID = mongo.ObjectID;
-
 let message = (function() {
 
   /**
@@ -30,65 +29,49 @@ let message = (function() {
     try{
 
       /**
-       * message from request
-       * @type {Object}
+       * Create varables
        */
-        let message = yield parse(this);
+      let requestObject = yield parse(this),
+          token = this.request.headers.authorization.split(' ')[1],
+          decoded = jwt.decode(token, environment.default.secret),
+          createdMessage;
 
-        if(!message.message) {
-          this.throw(401, 'message can not be blank');
-        };
+      /**
+       * Verification
+       */
+      if (!decoded.user.admin) {
+        this.throw(401, 'You dont have permssions');
+      };
+      if(!requestObject.message) {
+        this.throw(401, 'message can not be blank');
+      }
 
-        /**
-         * Check rules
-         */
-        let token = this.request.headers.authorization.split(' ')[1];
-        let decoded = jwt.decode(token, environment.default.secret);
+      /**
+       * Add properties and Save in DB
+       */
+      requestObject.from = {
+        _id: decoded.user.id, 
+        name: decoded.user.name, 
+        picture: decoded.user.picture
+      }
+      requestObject.createdTime = new Date();
+      createdMessage = yield mongo.messages.insert(requestObject);
 
-        if (!decoded.user.admin) {
-          this.throw(401, 'You dont have permssions');
-        };
 
-        /**
-         * Add properties
-         */
-        message.from = {
-          _id: decoded.user.id, 
-          name: decoded.user.name, 
-          picture: decoded.user.picture
-        }
-        message.createdTime = new Date();
-
-        /**
-         * Save in DB
-         */
-        let results = yield mongo.messages.insert(message);
-
-       /**
-        * Send responce
-        */
-       this.status = 201;
-       this.body = {
+      this.status = 201;
+      this.body = {
         title: "success create message",
-        message: results[0]
+        message: createdMessage[0]
       };
 
-      /**
-       * now notify everyone about this new message
-       */
-      message.id = message._id;
-      delete message._id;
-
-      /**
-       * Notify all throw web message socket
-       */
-      io.notify('message.created', message);
-    }
     /**
-     * Error Handelind
-     * @param  {Object} err 
+     * Notify all throw web message socket
      */
-    catch (err) {
+    requestObject.id = requestObject._id;
+    delete requestObject._id;
+    notificationIO.notifyAll('message.created', requestObject);
+
+    } catch (err) {
       this.status = err.status || 500;
       this.body = {
         message: "create message error",

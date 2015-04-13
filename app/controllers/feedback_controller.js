@@ -31,49 +31,40 @@ let feedback = (function() {
    */
   let _send = function *(temporaryPass){
     try{
+
       /**
-       * Get request
-       * @type {Object}
+       * Create varables
        */
-       let credentials = yield parse(this);
+      let requestObject = yield parse(this),
+          feedbackSend = feedbackMailer.send(),
+          createdFeedback;
 
-       if(!feedbackHelper.checkFieldsPresence([credentials])){
-        this.throw(401, 'fill in the required fields');
-       };
+      /**
+       * Verification
+       */
+      if(!feedbackHelper.checkFieldsPresence([requestObject])){
+       this.throw(401, 'fill in the required fields');
+      }
+      if(!validateEmail(requestObject.email)) {
+        this.throw(401, 'Email not valid');
+      };
 
-       /**
-        * Check email validity
-        */
-       if(!validateEmail(credentials.email)) {
-         this.throw(401, 'Email not valid');
-       };
-
-
-       /**
-        * Insert in DB
-        */
-       let savedFeedback = yield mongo.feedbacks.insert(credentials);
+      /**
+       * Insert in DB
+       */
+      createdFeedback = yield mongo.feedbacks.insert(requestObject);
 
        /**
         * Send Feedback
         */
-       let feedbackSend = feedbackMailer.send();
-       yield feedbackSend(credentials, this);
+      yield feedbackSend(requestObject, this);
 
-       /**
-        * Response action
-        */
-       this.status = 201;
-       this.body = {
-         message: "feedback send success",
-         feedback: savedFeedback[0]
+      this.status = 201;
+      this.body = {
+        message: "feedback send success",
+        feedback: createdFeedback[0]
        }
-     } 
-     /**
-      * Error Handelind
-      * @param  {Object} err 
-      */
-     catch (err) {
+     } catch (err) {
        this.status = err.status || 500;
        this.body = {
          message: "feedback send error",
@@ -92,7 +83,4 @@ let feedback = (function() {
 
 })();
 
-/**
-* Export
-*/
 module.exports = feedback;
