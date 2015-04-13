@@ -96,7 +96,4 @@ let sockets = {
   }
 }
 
-/**
- * Export
- */
 module.exports = _.merge(appConfig, mongoConfig, client, authConfig, emailConfig, sockets);

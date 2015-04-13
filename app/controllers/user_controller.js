@@ -22,150 +22,106 @@
  * Global varables
  */
 let ObjectID = mongo.ObjectID;
-
 let user = (function() {
 
+  /**
+   * POST /api/v1/user/signup
+   * signup user functionality
+   */
   let _signup = function *() {
 
-      try {
-        /**
-         * Create user varables
-         */
-         let requestUser = yield parse(this);
-         let user = yield mongo.users.findOne({email: requestUser.email});
-         let salt = yield bcrypt.genSalt(10);
+    try {
+      /**
+       * Create varables
+       */
+      let requestObject = yield parse(this),
+          user = yield mongo.users.findOne({email: requestObject.email}),
+          salt = yield bcrypt.genSalt(10),
+          cryptPass = yield bcrypt.hash(requestObject.pass, salt), 
+          createdTime = new Date(), 
+          createdUser, token;
 
       /**
-       * Check user in DB
+       * Verification
        */
-       if (user) {
-        /**
-         * Send occupied email error
-         */
-         this.throw(409, this.i18n.__('email_occupied'));
-        }
-      else {
+      if(!userHelper.checkFieldsPresence([requestObject])) {
+        this.throw(401, this.i18n.__('fields_not_presence'));
+      }
+      if(!validateEmail(requestObject.email)) {
+        this.throw(401, 'Email not valid');
+      }
+      if (user) {
+        this.throw(409, this.i18n.__('email_occupied'));
+      }
 
-        /**
-         * Check fields presence
-         */
-         if(userHelper.checkFieldsPresence([requestUser])) {
+      /**
+       * Save in DB operations
+       */
+      createdUser = yield mongo.users.insert(_.assign(requestObject, { 'pass': cryptPass, 'createdTime': createdTime}));
 
-          /**
-           * Check email validity
-           */
-          if(!validateEmail(requestUser.email)) {
-            this.throw(401, 'Email not valid');
-          }
+      /**
+       * Created token operations
+       */
+      createdUser[0].id = createdUser[0]._id;
+      delete createdUser[0]._id;
+      delete createdUser[0].password;
+      token = createJwtToken(createdUser[0]);
 
-          /**
-           * Create additional user object parametrs
-           */
-           let cryptPass = yield bcrypt.hash(requestUser.pass, salt);
-           let createdTime = new Date();
-
-          /**
-           * Insert in DB
-           */
-           let savedUser = yield mongo.users.insert(_.assign(requestUser, { 'pass': cryptPass, 'createdTime': createdTime}));
-           let user = savedUser[0];
-
-           /**
-            * Dekete user for token
-            */
-           user.id = user._id;
-           delete user._id;
-           delete user.password;
-
-           /**
-            * Generate token
-            */
-           let token = createJwtToken(user);
-
-          /**
-           * Send responce
-           */
-           this.status = 201;
-           this.body = {
-            message: this.i18n.__('success_registration'),
-            token: token,
-            userId: user.id
-          }
-        }
-
-        /**
-         * Send fields error
-         */
-         else {
-          this.throw(409, this.i18n.__('fields_not_presence'));
-       }
-     }
-   }
-
-   /**
-    * Catch other error
-    */
-    catch (err) {
+      this.status = 201;
+      this.body = {
+        message: this.i18n.__('success_registration'),
+        token: token,
+        userId: createdUser[0].id
+      }
+    } catch (err) {
       this.status = err.status || 500;
       this.body = {code: err.status, title: err.message};
     }
   };
 
+  /**
+   * POST /api/v1/user/signin
+   * signin user functionality
+   */
   let _signin = function *() {
     try {
-      /**
-       * Create request user verable
-       * Create vareble user from search in DB
-       */
-      let credentials = yield parse(this);
-      let user = yield mongo.users.findOne({email: credentials.email});
 
       /**
-       * Check email
+       * Create varables
        */
+      let requestObject = yield parse(this),
+          user = yield mongo.users.findOne({email: requestObject.email}),
+          comparePass, token;
+
+      /**
+       * Verification
+       */
+      if(!requestObject.pass && !requestObject.email) {
+        this.throw(401, this.i18n.__('fields_not_presence'));
+      }
       if(!user) {
         this.throw(401, 'Incorrect e-mail address.');
       }
-
-      /**
-       * Create compare Pass verable
-       * @type {Boolean}
-       */
-      let comparePass = yield bcrypt.compare(credentials.pass, user.pass);
-
-      /**
-       * Check pass
-       */
+      comparePass = yield bcrypt.compare(requestObject.pass, user.pass);
       if (!comparePass) {
         this.throw(401, 'Incorrect password.')
       }
 
       /**
-       * Dekete user for token
+       * Created token operations
        */
       user.id = user._id;
       delete user._id;
       delete user.password;
+      token = createJwtToken(user);
 
-      /**
-       * Generate token
-       */
-      let token = createJwtToken(user);
-
-      /**
-       * Send success responce
-       */
       this.status = 201;
       this.body = {
         message: "signin success",
         token: token,
         userId: user.id
       }
-    }
-    /**
-     * Send error responce
-     */
-    catch(err) {
+    } catch(err) {
       this.status = err.status || 500;
       this.body = {
         message: "signin error",
@@ -175,110 +131,62 @@ let user = (function() {
     }
   };
 
+  /**
+   * PUT /api/v1/user/update/:userId
+   * Update user functionality
+   */
   let _update = function *(userId) {
     try {
 
       /**
-       * credentials from request
-       * @type {Object}
+       * Create varables
        */
-      let credentials = yield parse(this);
+      let requestObject = yield parse(this),
+          mongoObjectId  = new ObjectID(userId),
+          user = yield mongo.users.findOne({_id: mongoObjectId}),
+          requestToken = this.request.headers.authorization.split(' ')[1],
+          decoded = jwt.decode(requestToken, environment.default.secret),
+          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass), 
+          markedUser, updatedUser;
 
       /**
-       * Specific mongo id Format
-       * @type {ObjectID}
+       * Verification
        */
-      let userObjectID  = new ObjectID(userId);
-
-      /**
-       * Password miss
-       */
-      if(!credentials.pass){
-        this.throw(401, 'Password does not exists');
-      };
-
-      /**
-       * Check exists user
-       * @type {ObjectID}
-       */
-      let existingUser = yield mongo.users.findOne({_id: userObjectID});
-      if(!existingUser) {
+      if(!user) {
         this.throw(401, 'User do not exist');
-      }
-
-      /**
-       * Check rules
-       */
-      let startedToken = this.request.headers.authorization.split(' ')[1];
-      let decoded = jwt.decode(startedToken, environment.default.secret);
+      } 
       if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
       }
-      
-      /**
-       * Create compare Pass varable
-       * @type {Boolean}
-       */
-      let comparePass = yield bcrypt.compare(credentials.pass, decoded.user.pass);
-
-      /**
-       * Check pass
-       */
+      if(!requestObject.pass){
+        this.throw(401, 'Password does not exists');
+      }
+      if(!validateEmail(requestObject.email)) {
+        this.throw(401, 'Email not valid');
+      }
+      markedUser = yield mongo.users.findOne({email: requestObject.email})
+      if (markedUser && (decoded.user.email != requestObject.email)) {
+        this.throw(401, 'Email occupied');
+      }
       if (!comparePass) {
         this.throw(401, 'Incorrect password.')
       }
 
       /**
-       * Check availability email
+       * Update in DB operations
        */
-      let pointUser = yield mongo.users.findOne({email: credentials.email})
-      if (pointUser && (decoded.user.email != credentials.email)) {
-        this.throw(401, 'Email occupied');
-      };
-
-      /**
-       * Check email validity
-       */
-      if(!validateEmail(credentials.email)) {
-        this.throw(401, 'Email not valid');
-      }
-
-      /**
-       * Update operation
-       */
-      let userForUpdate = _.assign(credentials, { pass: decoded.user.pass });
+      updatedUser = _.assign(requestObject, { pass: decoded.user.pass });
       yield mongo.users.update(
-          {_id: userObjectID},
-          {$set: userForUpdate}
+          {_id: mongoObjectId},
+          {$set: updatedUser}
       );
 
-      /**
-       * Find and check Updated user then set new token or throw error
-       */
-      let updatedUser = yield mongo.users.findOne({_id: userObjectID});
-
-      /**
-       * Check updatedUser
-       * @param  {Object}
-       */
-      if (!updatedUser) {
-        this.throw(401, 'Updated user not found');
-      };
-
-      /**
-       * Response action
-       */
       this.status = 201;
       this.body = {
         message: "update success",
-        userId: updatedUser._id
+        userId: userId
       }
-    }
-    /**
-     * Error catching
-     * @param  {Object} err
-     */
-    catch(err) {
+    } catch(err) {
       this.status = err.status || 500;
       this.body = {
         message: "update error",
@@ -297,66 +205,40 @@ let user = (function() {
     try {
 
       /**
-       * credentials from request
-       * @type {Object}
+       * Create varables
        */
-      let credentials = yield parse(this);
+      let requestObject = yield parse(this),
+          mongoObjectId  = new ObjectID(userId),
+          user = yield mongo.users.findOne({_id: mongoObjectId}),
+          requestToken = this.request.headers.authorization.split(' ')[1],
+          decoded = jwt.decode(requestToken, environment.default.secret),
+          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass);
 
       /**
-       * Specific mongo id Format
-       * @type {ObjectID}
+       * Verification
        */
-      let userObjectID  = new ObjectID(userId);
-
-      /**
-       * Check exists user
-       * @type {ObjectID}
-       */
-      let existingUser = yield mongo.users.findOne({_id: userObjectID});
-      if(!existingUser) {
+      if(!user) {
         this.throw(401, 'User do not exist');
       }
-      /**
-       * Check rules
-       */
-      let startedToken = this.request.headers.authorization.split(' ')[1];
-      let decoded = jwt.decode(startedToken, environment.default.secret);
       if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
-      };
-
-      /**
-       * Password miss
-       */
-      if(!credentials.pass){
+      }
+      if(!requestObject.pass){
         this.throw(401, 'Password does not exists');
-      };
-
-      /**
-       * Create compare Pass verable
-       * @type {Boolean}
-       */
-      let comparePass = yield bcrypt.compare(credentials.pass, decoded.user.pass);
-
-      /**
-       * Check pass
-       */
+      }
       if (!comparePass) {
         this.throw(401, 'Incorrect password.')
       }
 
       /**
-       * Delete operation
+       * Delete operation in DB
        */
-      yield mongo.users.remove( {"_id": userObjectID});
+      yield mongo.users.remove( {"_id": mongoObjectId});
 
-      /**
-       * Response action
-       */
       this.status = 201;
       this.body = {
         message: "delete success",
-        userId: existingUser._id
+        userId: userId
       }
     }
     catch(err) {
@@ -378,24 +260,18 @@ let user = (function() {
     try{
 
       /**
-       * Specific mongo id Format
-       * @type {ObjectID}
+       * Create varables
        */
-      let userObjectID  = new ObjectID(userId);
+      let requestObject  = new ObjectID(userId),
+          user = yield mongo.users.findOne({_id: requestObject});
 
       /**
-       * Check exists user
-       * @type {ObjectID}
+       * Verification
        */
-      let user = yield mongo.users.findOne({_id: userObjectID});
-
       if(!user){
         this.throw(401, 'User do not exist');
-      };
+      }
 
-      /**
-       * Response action
-       */
       this.status = 201;
       this.body = {
         message: "get user success",
@@ -414,7 +290,6 @@ let user = (function() {
         title: err.message
       };
     }
-
   };
 
   /**
@@ -425,33 +300,23 @@ let user = (function() {
     try{
 
       /**
-       * Specific mongo id Format
-       * @type {ObjectID}
+       * Create varables
        */
-      let userObjectID  = new ObjectID(userId);
+      let requestObject  = new ObjectID(userId),
+          user = yield mongo.users.findOne({_id: requestObject}),
+          token = this.request.headers.authorization.split(' ')[1],
+          decoded = jwt.decode(token, environment.default.secret);
 
       /**
-       * Check exists user
-       * @type {ObjectID}
+       * Verification
        */
-      let user = yield mongo.users.findOne({_id: userObjectID});
-
       if(!user){
         this.throw(401, 'User do not exist');
-      };
-
-      /**
-       * Check rules
-       */
-      let token = this.request.headers.authorization.split(' ')[1];
-      let decoded = jwt.decode(token, environment.default.secret);
+      }
       if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
-      };
+      }
 
-      /**
-       * Response action
-       */
       this.status = 201;
       this.body = {
         userId: user._id,
@@ -481,10 +346,6 @@ let user = (function() {
     get: _get,
     logout: _logout
   }
-
 })();
 
-/**
- * Export
- */
 module.exports = user;

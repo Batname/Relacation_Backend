@@ -71,10 +71,11 @@ function *seed(overwrite) {
         picture: ""
       },
       {
-        _id: 2,
+        _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
         email: 'dadubinin1@gmail.com',
         pass: yield bcrypt.hash(environment.default.pass2, salt),
         name: 'Chuck Norris',
+        admin: true,
         picture: ""
       }
     ];
