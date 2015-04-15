@@ -12,6 +12,7 @@
     "async": "^0.9.0",
     "co": "^4.5.1",
     "co-bcrypt": "^1.0.0",
+    "co-bcryptjs": "^0.2.0",
     "co-body": "^1.1.0",
     "co-mongo": "0.0.2",
     "co-request": "^0.2.1",
