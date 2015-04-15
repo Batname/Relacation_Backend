@@ -6,7 +6,7 @@
  let jwt = require("koa-jwt"),
      request = require('co-request'),
      parse = require('co-body'),
-     bcrypt = require('co-bcrypt'),
+     bcrypt = require('co-bcryptjs'),
      _ = require("lodash");
 
 /**
@@ -72,7 +72,7 @@ let feedback = (function() {
          title: err.message
        };
      }
-  }     
+  }
 
  /**
   * Return public methods

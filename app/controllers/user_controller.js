@@ -7,7 +7,7 @@
      request = require('co-request'),
      parse = require('co-body'),
      qs = require('querystring'),
-     bcrypt = require('co-bcrypt'),
+     bcrypt = require('co-bcryptjs'),
      _ = require("lodash");
 
 /**
@@ -37,8 +37,8 @@ let user = (function() {
       let requestObject = yield parse(this),
           user = yield mongo.users.findOne({email: requestObject.email}),
           salt = yield bcrypt.genSalt(10),
-          cryptPass = yield bcrypt.hash(requestObject.pass, salt), 
-          createdTime = new Date(), 
+          cryptPass = yield bcrypt.hash(requestObject.pass, salt),
+          createdTime = new Date(),
           createdUser, token;
 
       /**
@@ -146,7 +146,7 @@ let user = (function() {
           user = yield mongo.users.findOne({_id: mongoObjectId}),
           requestToken = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(requestToken, environment.default.secret),
-          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass), 
+          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass),
           markedUser, updatedUser;
 
       /**
@@ -154,7 +154,7 @@ let user = (function() {
        */
       if(!user) {
         this.throw(401, 'User do not exist');
-      } 
+      }
       if (decoded.user.id != userId) {
         this.throw(401, 'You dont have permssions');
       }

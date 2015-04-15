@@ -3,7 +3,7 @@
 /**
  * require libraries
  */
-let bcrypt = require('co-bcrypt'),
+let bcrypt = require('co-bcryptjs'),
     co = require("co");
 
 /**
