@@ -6,13 +6,14 @@ let environment = require("./../config/environments/" + process.env.NODE_ENV + "
     jwt = require('koa-jwt'),
     baseUrl = 'http://localhost:' + environment.default.port + '/api/v1',
     supertest = require('co-supertest'),
+    createJwtToken = require("./../config/auth/create_jwt_token"),
     request = supertest(baseUrl);
 
 
 
 // create a valid jwt token to be sent with every request
-let user = mongoSeed.users[1];
-let token = jwt.sign({id: user._id, name: user.name, email: user.email}, environment.default.secret);
+let user = mongoSeed.users[0];
+let token = createJwtToken({id: user._id, name: user.name, email: user.email, pass: user.pass});
 token = 'Bearer ' + token;
 
 // make request and token objects available

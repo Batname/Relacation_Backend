@@ -36,10 +36,7 @@ let user = (function() {
        * Create varables
        */
       let requestObject = yield parse(this),
-          user = yield mongo.users.findOne({email: requestObject.email}),
-          salt = yield bcrypt.genSalt(10),
-          cryptPass = yield bcrypt.hash(requestObject.pass, salt),
-          createdTime = new Date(),
+          User = new userModel(),
           newUser, createdUser, token;
 
       /**
@@ -51,16 +48,15 @@ let user = (function() {
       if(!validateEmail(requestObject.email)) {
         this.throw(401, 'Email not valid');
       }
-      if (user) {
+      if (yield User.isExistsByEmail(requestObject.email)) {
         this.throw(409, this.i18n.__('email_occupied'));
       }
 
       /**
        * Save in DB operations
        */
-      //createdUser = yield mongo.users.insert(_.assign(requestObject, { 'pass': cryptPass, 'createdTime': createdTime}));
-      newUser = new userModel(_.assign(requestObject, { 'pass': requestObject.pass, 'createdTime': createdTime}));
-      createdUser = yield newUser.save();
+      User.setProperties(_.assign(requestObject, { 'pass': requestObject.pass}));
+      createdUser = yield User.save();
 
       /**
        * Created token operations
@@ -93,8 +89,9 @@ let user = (function() {
        * Create varables
        */
       let requestObject = yield parse(this),
-          user = yield mongo.users.findOne({email: requestObject.email}),
-          comparePass, token;
+          User = new userModel(),
+          user = yield User.isExistsByEmail(requestObject.email),
+          token;
 
       /**
        * Verification
@@ -105,8 +102,7 @@ let user = (function() {
       if(!user) {
         this.throw(401, 'Incorrect e-mail address.');
       }
-      comparePass = yield bcrypt.compare(requestObject.pass, user.pass);
-      if (!comparePass) {
+      if (!(yield User.isPass(requestObject.pass))) {
         this.throw(401, 'Incorrect password.')
       }
 
@@ -146,12 +142,12 @@ let user = (function() {
        */
       let requestObject = yield parse(this),
           mongoObjectId  = new ObjectID(userId),
-          user = yield mongo.users.findOne({_id: mongoObjectId}),
+          User = new userModel(),
+          user = yield User.isExistsById(mongoObjectId),
           requestToken = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(requestToken, environment.default.secret),
-          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass),
+          comparePass = yield User.isDecodePass(requestObject.pass, decoded.user.pass),
           markedUser, updatedUser;
-
       /**
        * Verification
        */
@@ -178,11 +174,8 @@ let user = (function() {
       /**
        * Update in DB operations
        */
-      updatedUser = _.assign(requestObject, { pass: decoded.user.pass });
-      yield mongo.users.update(
-          {_id: mongoObjectId},
-          {$set: updatedUser}
-      );
+      User.setProperties(_.assign(requestObject, { pass: decoded.user.pass }));
+      yield User.update(mongoObjectId);
 
       this.status = 201;
       this.body = {
@@ -212,10 +205,11 @@ let user = (function() {
        */
       let requestObject = yield parse(this),
           mongoObjectId  = new ObjectID(userId),
-          user = yield mongo.users.findOne({_id: mongoObjectId}),
+          User = new userModel(),
+          user = yield User.isExistsById(mongoObjectId),
           requestToken = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(requestToken, environment.default.secret),
-          comparePass = yield bcrypt.compare(requestObject.pass, decoded.user.pass);
+          comparePass = yield User.isDecodePass(requestObject.pass, decoded.user.pass);
 
       /**
        * Verification
@@ -236,7 +230,7 @@ let user = (function() {
       /**
        * Delete operation in DB
        */
-      yield mongo.users.remove( {"_id": mongoObjectId});
+      yield User.delete(mongoObjectId);
 
       this.status = 201;
       this.body = {
@@ -265,8 +259,9 @@ let user = (function() {
       /**
        * Create varables
        */
-      let requestObject  = new ObjectID(userId),
-          user = yield mongo.users.findOne({_id: requestObject});
+      let mongoObjectId  = new ObjectID(userId),
+          User = new userModel(),
+          user = yield User.isExistsById(mongoObjectId);
 
       /**
        * Verification
@@ -305,8 +300,9 @@ let user = (function() {
       /**
        * Create varables
        */
-      let requestObject  = new ObjectID(userId),
-          user = yield mongo.users.findOne({_id: requestObject}),
+      let mongoObjectId  = new ObjectID(userId),
+          User = new userModel(),
+          user = yield User.isExistsById(mongoObjectId),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret);
 

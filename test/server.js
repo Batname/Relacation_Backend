@@ -23,6 +23,39 @@ describe("User Model testing", function () {
           .send({email: "dadubinin@gmail.com", pass: "pass1"})
           .expect(201)
           .end();
+  });  
+
+  it("should update a user", function *() {
+    yield request
+          .put("/user/update/5527a81b9f8ab90e5fc1513a")
+          .set('Authorization', token)
+          .send({email: "dadubinin9@gmail.com", pass: "pass1"})
+          .expect(201)
+          .end();
+  });
+
+  it("should delete a user", function *() {
+    yield request
+          .del("/user/delete/5527a81b9f8ab90e5fc1513a")
+          .set('Authorization', token)
+          .send({pass: "pass1"})
+          .expect(201)
+          .end();
+  });
+
+  it("should get a user", function *() {
+    yield request
+          .get("/user/5527a81b9f8ab90e5fc1513a")
+          .expect(201)
+          .end();
+  });
+
+  it("should logout user", function *() {
+    yield request
+          .put("/user/logout/5527a81b9f8ab90e5fc1513a")
+          .set('Authorization', token)
+          .expect(201)
+          .end();
   });
 
   it("should get forgot", function *() {
