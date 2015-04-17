@@ -60,7 +60,6 @@ let rouretConfigs = {
   },
 
   handlePublicRouters: function (app) {
-
     /**
      * User routers
      */
@@ -73,7 +72,7 @@ let rouretConfigs = {
      */
     app.use(route.get("/api/v1/posts", post.list));
     app.use(route.get("/api/v1/post/:postId", post.get));
-    
+
     /**
      * Forgot password
      */
@@ -87,7 +86,7 @@ let rouretConfigs = {
     app.use(route.post("/api/v1/password/forgot/reset/:temporaryPass", password.postReset));
 
     /**
-     * Feedback 
+     * Feedback
      */
     app.use(route.post("/api/v1/feedback", feedback.send));
 

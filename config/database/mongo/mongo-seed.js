@@ -4,6 +4,7 @@
  * require libraries
  */
 let bcrypt = require('co-bcryptjs'),
+    bcryptSync = require('bcryptjs'),
     co = require("co");
 
 /**
@@ -31,6 +32,32 @@ function getTime(h) {
 }
 
 /**
+ * Create salt and hash varables
+ */
+let salt = bcryptSync.genSaltSync(10);
+/**
+ * users object
+ */
+let users = [
+  {
+    _id: new ObjectID("5527a81b9f8ab90e5fc1513a"),
+    email: 'dadubinin@gmail.com',
+    pass: bcryptSync.hashSync(environment.default.pass1, salt),
+    name: 'Morgan the Almighty',
+    admin: true,
+    picture: ""
+  },
+  {
+    _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
+    email: 'dadubinin1@gmail.com',
+    pass: bcryptSync.hashSync(environment.default.pass2, salt),
+    name: 'Chuck Norris',
+    admin: true,
+    picture: ""
+  }
+];
+
+/**
  * Populates the database with seed data.
  * @param overwrite Overwrite existing database even if it is not empty.
  */
@@ -53,32 +80,6 @@ function *seed(overwrite) {
         }
       }
     }
-
-    /**
-     * Create salt and hash varables
-     */
-    let salt = yield bcrypt.genSalt(10);
-    /**
-     * users object
-     */
-    let users = [
-      {
-        _id: new ObjectID("5527a81b9f8ab90e5fc1513a"),
-        email: 'dadubinin@gmail.com',
-        pass: yield bcrypt.hash(environment.default.pass1, salt),
-        name: 'Morgan the Almighty',
-        admin: true,
-        picture: ""
-      },
-      {
-        _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
-        email: 'dadubinin1@gmail.com',
-        pass: yield bcrypt.hash(environment.default.pass2, salt),
-        name: 'Chuck Norris',
-        admin: true,
-        picture: ""
-      }
-    ];
 
     /**
      * client object
@@ -190,4 +191,5 @@ function *seed(overwrite) {
 /**
  * Export seed data and seed function
  */
+seed.users = users;
 module.exports = seed;

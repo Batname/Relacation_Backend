@@ -17,6 +17,7 @@
      userHelper = require("./../helpers/user_helper"),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
      validateEmail = require("./../helpers/email_validation"),
+     userModel = require("./../models/user_model"),
      createJwtToken = require("./../../config/auth/create_jwt_token");
 /**
  * Global varables
@@ -39,7 +40,7 @@ let user = (function() {
           salt = yield bcrypt.genSalt(10),
           cryptPass = yield bcrypt.hash(requestObject.pass, salt),
           createdTime = new Date(),
-          createdUser, token;
+          newUser, createdUser, token;
 
       /**
        * Verification
@@ -57,7 +58,9 @@ let user = (function() {
       /**
        * Save in DB operations
        */
-      createdUser = yield mongo.users.insert(_.assign(requestObject, { 'pass': cryptPass, 'createdTime': createdTime}));
+      //createdUser = yield mongo.users.insert(_.assign(requestObject, { 'pass': cryptPass, 'createdTime': createdTime}));
+      newUser = new userModel(_.assign(requestObject, { 'pass': requestObject.pass, 'createdTime': createdTime}));
+      createdUser = yield newUser.save();
 
       /**
        * Created token operations

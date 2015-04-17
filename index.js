@@ -24,6 +24,11 @@
  io;
 
 /**
+ * routers configs
+ */
+ routers.handleConfigs(app);
+
+/**
  * Initialisation function
  */
  app.init = co.wrap(function *index() {
@@ -32,25 +37,13 @@
    * db connect
    */
    yield mongo.connect();
-
-  /**
-   * mongoSeed start. Any time overwrite databace.
-   */
    yield mongoSeed(true);
 
-  /**
-   * routers configs
-   */
-   routers.handleConfigs(app);
 
    /**
-    * connect public routers
+    * routers
     */
    routers.handlePublicRouters(app);
-
-   /**
-    * connect public routers
-    */
    routers.handlePrivateRouters(app);
 
   /**
@@ -66,8 +59,7 @@
   /**
    * start server.
    */
-   server.listen(process.env.PORT);
-
+   app.server = server.listen(process.env.PORT);
 
   /**
    * Server logging
@@ -78,6 +70,7 @@
 
 });
 
+module.exports = app;
 /**
  * Inplement index function
  */
@@ -86,4 +79,4 @@
     console.error(err.stack);
     process.exit(1);
   });
-}
+};
