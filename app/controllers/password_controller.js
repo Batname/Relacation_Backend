@@ -14,6 +14,7 @@
  */
  let mongo = require('./../../config/database/mongo/mongo'),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     passwordModel = require("./../models/password_model"),
      validateEmail = require("./../helpers/email_validation"),
      createJwtToken = require("./../../config/auth/create_jwt_token"),
      forgotPassMailer = require("./../mailers/forgot_password");
@@ -68,11 +69,10 @@ let password = (function() {
        * Create varables
        */
       let requestObject = yield parse(this),
-          salt = yield bcrypt.genSalt(10),
-          hash = yield bcrypt.hash('restpass', salt),
-          temporaryPass = hash.replace(/[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, ''),
-          user = yield mongo.users.findOne({email: requestObject.email}),
-          forgotPassSend = forgotPassMailer.forgot();
+          Password = new passwordModel(),
+          user = yield Password.findUserByEmail(requestObject.email),
+          forgotPassSend = forgotPassMailer.forgot(),
+          temporaryPass;
 
       /**
        * Verification
@@ -90,13 +90,7 @@ let password = (function() {
       /**
        * Update user in DB
        */
-      yield mongo.users.update(
-          {email: requestObject.email},
-          {$set: {
-            resetPassword: temporaryPass,
-            resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
-          }}
-      );
+      temporaryPass = yield Password.saveResetPassword(requestObject.email);
 
       /**
        * Send Message
@@ -129,7 +123,8 @@ let password = (function() {
       /**
        * Create varables
        */
-       let user = yield mongo.users.findOne({resetPassword: temporaryPass});
+      let Password = new passwordModel(),
+          user = Password.findByResetPassword(temporaryPass);
 
       /**
        * Verification
@@ -167,9 +162,8 @@ let password = (function() {
        * Create varables
        */
       let requestObject = yield parse(this),
-          user = yield mongo.users.findOne({resetPassword: temporaryPass}),
-          salt = yield bcrypt.genSalt(10),
-          cryptPass = yield bcrypt.hash(requestObject.pass, salt),
+          Password = new passwordModel(),
+          user = yield Password.findByResetPassword(temporaryPass),
           updatedUser, token,
           resetPassSend = forgotPassMailer.reset();
 
@@ -189,20 +183,14 @@ let password = (function() {
       /**
        * Update user in DB
        */
-      yield mongo.users.update(
-         {_id: user._id},
-         {$set: {
-          pass: cryptPass,
-          resetPassword : undefined,
-          resetPasswordExpires : undefined
-           }
-         }
-      );
+      Password.setProperties({'pass': requestObject.pass});
+      yield Password.setNewPassword(requestObject.pass, user._id);
+
 
       /**
        * Created token operations
        */
-      updatedUser = yield mongo.users.findOne({_id: user._id});
+      updatedUser = yield Password.findUserById(user._id);
       updatedUser.id = updatedUser._id;
       delete updatedUser._id;
       delete updatedUser.password;

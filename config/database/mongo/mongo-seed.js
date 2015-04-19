@@ -45,7 +45,9 @@ let users = [
     pass: bcryptSync.hashSync(environment.default.pass1, salt),
     name: 'Morgan the Almighty',
     admin: true,
-    picture: ""
+    picture: "",
+    resetPassword: "1a10LgjVFbkT2I2Xq7Hgguzq5uCA8ddjzP3m6PQXS8S7N2yPWPa8DL3",
+    resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
   },
   {
     _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
@@ -53,7 +55,9 @@ let users = [
     pass: bcryptSync.hashSync(environment.default.pass2, salt),
     name: 'Chuck Norris',
     admin: true,
-    picture: ""
+    picture: "",
+    resetPassword: "2a10LgjVFbkT2I2Xq7Hgguzq5uCA8ddjzP3m6PQXS8S7N2yPWPa8DL3",
+    resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
   }
 ];
 
@@ -95,7 +99,7 @@ function *seed(overwrite) {
      */
     let posts_en = [
       {
-        _id: new ObjectID(),
+        _id: new ObjectID("5527a81b9f8ab90e5fc1515a"),
         from: {_id: 1, name: 'Morgan the Almighty', picture: '/api/users/1/picture'},
         message: 'Hi there! This is a sample post demonstrating a KOAN app. KOAN is a simple boilerplate for building full-stack JavaScript Web applications using Koa, AngularJS, and Node.js. It utilizes WebSockets to provide real-time communication between servers and clients. MongoDB is used for data persistence and Passport.js for social logins. There are also numerous Grunt tasks pre-bundled and configured to facilitate development and testing. You can open this site in multiple browser tabs and post something to see how real-time communication works. You can also browse the project’s GitHub page to start building KOAN apps yourself.',
         createdTime: getTime(-97),

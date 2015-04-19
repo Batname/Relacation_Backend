@@ -48,7 +48,7 @@ let user = (function() {
       if(!validateEmail(requestObject.email)) {
         this.throw(401, 'Email not valid');
       }
-      if (yield User.isExistsByEmail(requestObject.email)) {
+      if (yield User.findUserByEmail(requestObject.email)) {
         this.throw(409, this.i18n.__('email_occupied'));
       }
 
@@ -90,7 +90,7 @@ let user = (function() {
        */
       let requestObject = yield parse(this),
           User = new userModel(),
-          user = yield User.isExistsByEmail(requestObject.email),
+          user = yield User.findUserByEmail(requestObject.email),
           token;
 
       /**
@@ -143,7 +143,7 @@ let user = (function() {
       let requestObject = yield parse(this),
           mongoObjectId  = new ObjectID(userId),
           User = new userModel(),
-          user = yield User.isExistsById(mongoObjectId),
+          user = yield User.findUserById(mongoObjectId),
           requestToken = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(requestToken, environment.default.secret),
           comparePass = yield User.isDecodePass(requestObject.pass, decoded.user.pass),
@@ -206,7 +206,7 @@ let user = (function() {
       let requestObject = yield parse(this),
           mongoObjectId  = new ObjectID(userId),
           User = new userModel(),
-          user = yield User.isExistsById(mongoObjectId),
+          user = yield User.findUserById(mongoObjectId),
           requestToken = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(requestToken, environment.default.secret),
           comparePass = yield User.isDecodePass(requestObject.pass, decoded.user.pass);
@@ -261,7 +261,7 @@ let user = (function() {
        */
       let mongoObjectId  = new ObjectID(userId),
           User = new userModel(),
-          user = yield User.isExistsById(mongoObjectId);
+          user = yield User.findUserById(mongoObjectId);
 
       /**
        * Verification
@@ -302,7 +302,7 @@ let user = (function() {
        */
       let mongoObjectId  = new ObjectID(userId),
           User = new userModel(),
-          user = yield User.isExistsById(mongoObjectId),
+          user = yield User.findUserById(mongoObjectId),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret);
 

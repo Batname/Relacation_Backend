@@ -13,7 +13,7 @@ let environment = require("./../config/environments/" + process.env.NODE_ENV + "
 
 // create a valid jwt token to be sent with every request
 let user = mongoSeed.users[0];
-let token = createJwtToken({id: user._id, name: user.name, email: user.email, pass: user.pass});
+let token = createJwtToken({id: user._id, name: user.name, email: user.email, pass: user.pass, admin: user.admin});
 token = 'Bearer ' + token;
 
 // make request and token objects available

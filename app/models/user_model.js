@@ -31,18 +31,6 @@ User.prototype.setProperties = function(properties){
   _.assign(this, properties || {});
 };
 
-User.prototype.isExistsByEmail = function *(email){
-  let user = yield mongo.users.findOne({email: email}); 
-  this.setProperties(user);
-  return user; 
-};
-
-User.prototype.isExistsById = function *(id){
-  let user = yield mongo.users.findOne({_id: id}); 
-  this.setProperties(user);
-  return user; 
-};
-
 User.prototype.init = function() {
   Object.defineProperty(this, "pass", {
     get: function() {
@@ -53,14 +41,6 @@ User.prototype.init = function() {
       this.newPass = true;
     }
   });
-};
-
-User.prototype.hashPassword = function *() {
-  if(this.newPass) {
-    this.newPass = false;
-    let salt = yield bcrypt.genSalt(10);
-    this.pass = yield bcrypt.hash(this.pass, salt);
-  };
 };
 
 User.prototype.save = function *() {

@@ -23,4 +23,24 @@ Abstract.prototype.isDecodePass = function *(pass, decoded_pass){
   return yield bcrypt.compare(pass, decoded_pass);
 };  
 
+Abstract.prototype.findUserByEmail = function *(email){
+  let user = yield mongo.users.findOne({email: email}); 
+  this.setProperties(user);
+  return user; 
+};
+
+Abstract.prototype.findUserById = function *(id){
+  let user = yield mongo.users.findOne({_id: id}); 
+  this.setProperties(user);
+  return user; 
+};
+
+Abstract.prototype.hashPassword = function *() {
+  if(this.newPass) {
+    this.newPass = false;
+    let salt = yield bcrypt.genSalt(10);
+    this.pass = yield bcrypt.hash(this.pass, salt);
+  };
+};
+
 module.exports = Abstract;

@@ -16,25 +16,22 @@ let mongo = require('./../../config/database/mongo/mongo'),
 
 /**
  * Global varables
- */
-let createdTime = new Date();  
+ */ 
+const SCHEMA = ["name", "email", "message"];
 
-const SCHEMA = ["from", "message", "createdTime"];
-
-let Message = function (properties) {
+let Feedback = function (properties) {
   Abstract.apply(this, arguments);
   _.assign(this, properties || {});
 };
 
-Message.prototype = Object.create(Abstract.prototype);
+Feedback.prototype = Object.create(Abstract.prototype);
 
-Message.prototype.createMessage = function *(message_object) {
+Feedback.prototype.createFeedback = function *(feedback_object) {
   let data;
 
-  data = _.pick(message_object, SCHEMA);
+  data = _.pick(feedback_object, SCHEMA);
 
-  return yield mongo.messages.insert(data);
+  return yield mongo.feedbacks.insert(data);
 };
 
-
-module.exports = Message;
+module.exports = Feedback;
