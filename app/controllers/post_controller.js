@@ -13,6 +13,7 @@
  */
  let mongo = require('./../../config/database/mongo/mongo'),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     postModel = require("./../models/post_model"),
      notificationIO = require("./../sockets/notification_socket");
 /**
  * Global varables
@@ -31,7 +32,7 @@ let post = (function() {
       /**
        * Create varables
        */
-      let posts;
+      let posts, Post = new postModel();
       
       /**
        * Verification
@@ -43,10 +44,7 @@ let post = (function() {
       /**
        * Fund posts in DB
        */
-      posts = yield mongo["posts_"+this.query.db_locale].find(
-        {},
-        {comments: {$slice: -15 }},
-        {limit: 15, sort: {_id: -1}} ).toArray();
+      posts = yield Post.getPosts(this.query.db_locale);
       posts.forEach(function (post) {
         post.id = post._id;
         delete post._id;
@@ -80,7 +78,7 @@ let post = (function() {
       let requestObject = yield parse(this), 
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret),
-          createdPost;
+          createdPost, Post = new postModel();
 
       /**
        * Verification
@@ -110,8 +108,8 @@ let post = (function() {
         
       /**
        * Save in DB
-       */
-      createdPost = yield mongo["posts_"+this.query.db_locale].insert(requestObject);
+       */ 
+      createdPost = yield Post.createPost(this.query.db_locale, requestObject);
 
       this.status = 201;
       this.body = {
@@ -149,7 +147,7 @@ let post = (function() {
           mongoObjectId  = new ObjectID(postId),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret),
-          updatePost, updatedPost, post;
+          updatePost, updatedPost, post, Post = new postModel();
 
       /**
        * Verification
@@ -160,7 +158,7 @@ let post = (function() {
       if(!mongo["posts_"+this.query.db_locale]) {
         this.throw(401, 'Db do not exists');
       }
-      post = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      post = yield Post.findPostById(this.query.db_locale, mongoObjectId);
       if(!post) {
         this.throw(401, 'Post do not exist');
       }
@@ -174,12 +172,8 @@ let post = (function() {
       /**
        * Update operation and find updated post
        */
-      updatePost = _.assign({ message: requestObject.message });
-      yield mongo["posts_"+this.query.db_locale].update(
-          {_id: mongoObjectId},
-          {$set: updatePost}
-      );
-      updatedPost = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      yield Post.updatePost(this.query.db_locale, requestObject, mongoObjectId)
+      updatedPost = yield Post.findPostById(this.query.db_locale, mongoObjectId);
 
       this.status = 201;
       this.body = {
@@ -209,7 +203,7 @@ let post = (function() {
       let mongoObjectId  = new ObjectID(postId),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret),
-          post;
+          post, Post = new postModel();
 
       /**
        * Verification
@@ -220,7 +214,7 @@ let post = (function() {
       if(!mongo["posts_"+this.query.db_locale]) {
         this.throw(401, 'Db do not exists');
       }
-      post = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      post = yield Post.findPostById(this.query.db_locale, mongoObjectId);
       if(!post) {
         this.throw(401, 'Post do not exist');
       }
@@ -231,7 +225,7 @@ let post = (function() {
       /**
        * Delete operation in db
        */
-      yield mongo["posts_"+this.query.db_locale].remove( {"_id": mongoObjectId});
+      yield Post.deletePost(this.query.db_locale, mongoObjectId);
 
       this.status = 201;
       this.body = {
@@ -259,7 +253,7 @@ let post = (function() {
        * Create varables
        */
       let mongoObjectId  = new ObjectID(postId),
-          post;
+          post, Post = new postModel();
 
       /**
        * Verification
@@ -270,7 +264,7 @@ let post = (function() {
       if(!mongo["posts_"+this.query.db_locale]) {
         this.throw(401, 'Db do not exists');
       }
-      post = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      post = yield Post.findPostById(this.query.db_locale, mongoObjectId);
       if(!post) {
         this.throw(401, 'Post do not exist');
       }
@@ -305,7 +299,7 @@ let post = (function() {
           commentId = new ObjectID(),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret),
-          post, updatedPost;
+          post, updatedPost, Post = new postModel();
 
       /**
        * Verification
@@ -316,7 +310,7 @@ let post = (function() {
       if(!mongo["posts_"+this.query.db_locale]) {
         this.throw(401, 'Db do not exists');
       }
-      post = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      post = yield Post.findPostById(this.query.db_locale, mongoObjectId);
       if(!post) {
         this.throw(401, 'Post do not exist');
       }
@@ -336,11 +330,8 @@ let post = (function() {
         picture: decoded.user.picture
       }
       requestObject = {_id: commentId, from: requestObject.from, createdTime: new Date(), message: requestObject.message};
-      yield mongo["posts_"+this.query.db_locale].update(
-          {_id: mongoObjectId},
-          {$push: {comments: requestObject}}
-      );
-      updatedPost = yield mongo["posts_"+this.query.db_locale].findOne({_id: mongoObjectId});
+      yield Post.pushComment(this.query.db_locale, requestObject, mongoObjectId);
+      updatedPost = yield Post.findPostById(this.query.db_locale, mongoObjectId);
 
 
       this.status = 201;

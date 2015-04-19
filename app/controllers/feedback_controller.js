@@ -16,7 +16,8 @@
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
      validateEmail = require("./../helpers/email_validation"),
      feedbackHelper = require("./../helpers/feedback_helper"),
-     feedbackMailer = require("./../mailers/feedback_mailer");
+     feedbackMailer = require("./../mailers/feedback_mailer"),
+     feedbackModel = require("./../models/feedback_model");
 /**
  * Global varables
  */
@@ -37,7 +38,7 @@ let feedback = (function() {
        */
       let requestObject = yield parse(this),
           feedbackSend = feedbackMailer.send(),
-          createdFeedback;
+          createdFeedback, Feedback = new feedbackModel();
 
       /**
        * Verification
@@ -52,7 +53,7 @@ let feedback = (function() {
       /**
        * Insert in DB
        */
-      createdFeedback = yield mongo.feedbacks.insert(requestObject);
+      createdFeedback = yield Feedback.createFeedback(requestObject);
 
        /**
         * Send Feedback

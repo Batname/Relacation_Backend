@@ -13,6 +13,7 @@
  */
  let mongo = require('./../../config/database/mongo/mongo'),
      environment = require("./../../config/environments/" + process.env.NODE_ENV + "_config"),
+     messageModel = require("./../models/message_model"),
      notificationIO = require("./../sockets/notification_socket");
 
 /**
@@ -34,7 +35,7 @@ let message = (function() {
       let requestObject = yield parse(this),
           token = this.request.headers.authorization.split(' ')[1],
           decoded = jwt.decode(token, environment.default.secret),
-          createdMessage;
+          createdMessage, Message = new messageModel();
 
       /**
        * Verification
@@ -55,7 +56,7 @@ let message = (function() {
         picture: decoded.user.picture
       }
       requestObject.createdTime = new Date();
-      createdMessage = yield mongo.messages.insert(requestObject);
+      createdMessage = yield Message.createMessage(requestObject);
 
 
       this.status = 201;

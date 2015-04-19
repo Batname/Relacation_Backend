@@ -4,6 +4,7 @@
  * require libraries
  */
 let bcrypt = require('co-bcryptjs'),
+    bcryptSync = require('bcryptjs'),
     co = require("co");
 
 /**
@@ -31,6 +32,36 @@ function getTime(h) {
 }
 
 /**
+ * Create salt and hash varables
+ */
+let salt = bcryptSync.genSaltSync(10);
+/**
+ * users object
+ */
+let users = [
+  {
+    _id: new ObjectID("5527a81b9f8ab90e5fc1513a"),
+    email: 'dadubinin@gmail.com',
+    pass: bcryptSync.hashSync(environment.default.pass1, salt),
+    name: 'Morgan the Almighty',
+    admin: true,
+    picture: "",
+    resetPassword: "1a10LgjVFbkT2I2Xq7Hgguzq5uCA8ddjzP3m6PQXS8S7N2yPWPa8DL3",
+    resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
+  },
+  {
+    _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
+    email: 'dadubinin1@gmail.com',
+    pass: bcryptSync.hashSync(environment.default.pass2, salt),
+    name: 'Chuck Norris',
+    admin: true,
+    picture: "",
+    resetPassword: "2a10LgjVFbkT2I2Xq7Hgguzq5uCA8ddjzP3m6PQXS8S7N2yPWPa8DL3",
+    resetPasswordExpires: 3600 + (Date.now() / 1000 | 0)
+  }
+];
+
+/**
  * Populates the database with seed data.
  * @param overwrite Overwrite existing database even if it is not empty.
  */
@@ -55,32 +86,6 @@ function *seed(overwrite) {
     }
 
     /**
-     * Create salt and hash varables
-     */
-    let salt = yield bcrypt.genSalt(10);
-    /**
-     * users object
-     */
-    let users = [
-      {
-        _id: new ObjectID("5527a81b9f8ab90e5fc1513a"),
-        email: 'dadubinin@gmail.com',
-        pass: yield bcrypt.hash(environment.default.pass1, salt),
-        name: 'Morgan the Almighty',
-        admin: true,
-        picture: ""
-      },
-      {
-        _id: new ObjectID("5527a81b9f8ab90e5fc1514a"),
-        email: 'dadubinin1@gmail.com',
-        pass: yield bcrypt.hash(environment.default.pass2, salt),
-        name: 'Chuck Norris',
-        admin: true,
-        picture: ""
-      }
-    ];
-
-    /**
      * client object
      */
 
@@ -94,7 +99,7 @@ function *seed(overwrite) {
      */
     let posts_en = [
       {
-        _id: new ObjectID(),
+        _id: new ObjectID("5527a81b9f8ab90e5fc1515a"),
         from: {_id: 1, name: 'Morgan the Almighty', picture: '/api/users/1/picture'},
         message: 'Hi there! This is a sample post demonstrating a KOAN app. KOAN is a simple boilerplate for building full-stack JavaScript Web applications using Koa, AngularJS, and Node.js. It utilizes WebSockets to provide real-time communication between servers and clients. MongoDB is used for data persistence and Passport.js for social logins. There are also numerous Grunt tasks pre-bundled and configured to facilitate development and testing. You can open this site in multiple browser tabs and post something to see how real-time communication works. You can also browse the project’s GitHub page to start building KOAN apps yourself.',
         createdTime: getTime(-97),
@@ -190,4 +195,5 @@ function *seed(overwrite) {
 /**
  * Export seed data and seed function
  */
+seed.users = users;
 module.exports = seed;
